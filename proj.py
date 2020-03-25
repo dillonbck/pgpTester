@@ -3,7 +3,6 @@
 from names_list import NAMES_LIST
 import random
 from graphviz import Digraph
-import copy
 
 
 takenNames = [-1]
@@ -13,24 +12,24 @@ TRUST_NONE = 0
 TRUST_PARTIAL = 1
 TRUST_FULL = 2
 TRUST_ULTIMATE = 3
-TRUST_LEVEL_STRINGS = {TRUST_NONE: "None",
-                       TRUST_PARTIAL: "Partial",
-                       TRUST_FULL: "Full",
-                       TRUST_ULTIMATE: "Ultimate"}
-trustLevelProbability = {TRUST_NONE: 1, #only matters is signed keys partial trust
-                         TRUST_PARTIAL: .1,
-                         TRUST_FULL: .01,
-                         TRUST_ULTIMATE: 0}
+TRUST_LEVEL_STRINGS = {
+    TRUST_NONE: "None",
+    TRUST_PARTIAL: "Partial",
+    TRUST_FULL: "Full",
+    TRUST_ULTIMATE: "Ultimate",
+}
+
 
 def getRandomName():
     x = -1
     while x in takenNames:
-        x = random.randint(0,len(NAMES_LIST)-1)
+        x = random.randint(0, len(NAMES_LIST) - 1)
     name = NAMES_LIST[x]
     takenNames.append(x)
-    if len(takenNames)-1 == len(NAMES_LIST):
+    if len(takenNames) - 1 == len(NAMES_LIST):
         raise ValueError("All names exhausted")
     return name
+
 
 class User(object):
     def __init__(self, trustLevel=None, name=None):
@@ -45,7 +44,6 @@ class User(object):
 
         # Other users that have signed this user
         self.signers = []
-
 
         if not name:
             self.name = getRandomName()
@@ -79,9 +77,13 @@ class User(object):
 
     @property
     def identifier(self):
-        out = (self.name + "\n" +
-               TRUST_LEVEL_STRINGS[self.trustLevel] + "\n" +
-               str(self.pathLengthToMainUser))
+        out = (
+            self.name
+            + "\n"
+            + TRUST_LEVEL_STRINGS[self.trustLevel]
+            + "\n"
+            + str(self.pathLengthToMainUser)
+        )
         return out
 
     def __eq__(self, other):
@@ -89,87 +91,129 @@ class User(object):
             return True
         return False
 
-def main():
-
-    for x in range(1):
-        run_test()
 
 def run_test():
+    trustLevelProbability = {
+        TRUST_NONE: 0.1,  # only matters if signed keys partial trust
+        TRUST_PARTIAL: 0.1,
+        TRUST_FULL: 0.01,
+        TRUST_ULTIMATE: 0,
+    }
+
+    # Test web configuration parameters for debugging
     numMainSignedUsersList = [50]
     numOtherUsersList = [100]
     probImmediateFullTrustList = [1]
-    probBadActorList = [.2]
+    probBadActorList = [0.2]
     probOtherSignedList = [3]
 
-    #numMainSignedUsersList = [5, 10, 20, 100, 200] # number of users signed by main user
-    #probImmediateFullTrustList = [1] # probability that mainSignedUsers user has partial or full trust
-    #numOtherUsersList = [10, 20, 40, 200, 400] # number of otherUser users
-    #probBadActorList = [.2, .5, .8] # probability that otherUser user is a bad actor
-    #probOtherSignedList = [2, 3, 4] # probability that mainSignedUser+otherUsers user will sign an otherUser # density of the web: sparse, normal, dense
+    ## Full web configuration parameters
+    # numMainSignedUsersList = [5, 10, 20, 100, 200] # number of users signed by main user
+    # probImmediateFullTrustList = [1] # probability that mainSignedUsers user has partial or full trust
+    # numOtherUsersList = [10, 20, 40, 200, 400] # number of otherUser users
+    # probBadActorList = [.2, .5, .8] # probability that otherUser user is a bad actor
+    # probOtherSignedList = [2, 3, 4] # probability that mainSignedUser+otherUsers user will sign an otherUser # density of the web: sparse, normal, dense
 
+    # Iterate over all combinations of web configuration parameters
     for numMainSignedUsers in numMainSignedUsersList:
         for probImmediateFullTrust in probImmediateFullTrustList:
             for numOtherUsers in numOtherUsersList:
                 for probBadActor in probBadActorList:
                     for probOtherSigned in probOtherSignedList:
 
-                        mainUser, mainSignedUsers, otherUsers = createWebOfUsers(numMainSignedUsers,
-                                                                                 numOtherUsers,
-                                                                                 probImmediateFullTrust,
-                                                                                 probBadActor,
-                                                                                 probOtherSigned)
+                        mainUser, mainSignedUsers, otherUsers = createWebOfUsers(
+                            numMainSignedUsers,
+                            numOtherUsers,
+                            trustLevelProbability,
+                            probImmediateFullTrust,
+                            probBadActor,
+                            probOtherSigned,
+                        )
 
-                        #makeAllValidKeysPartialTrustList = [True, False]
-                        #numMarginallyTrustedRequiredList = [1,2,3,4]
-                        #maxPathLengthList = [2,3,4,5]
+                        print("-------------------------------")
+                        print("-------Web Configuration-------")
+                        print("-------------------------------")
+                        print("numMainSignedUsers:", numMainSignedUsers)
+                        print("probImmediateFullTrust:", probImmediateFullTrust)
+                        print("numOtherUsers:", numOtherUsers)
+                        print("probBadActor:", probBadActor)
+                        print("probOtherSigned:", probOtherSigned)
+
+                        # Test key validation parmaeters for debugging
                         makeAllValidKeysPartialTrustList = [False]
-                        numMarginallyTrustedRequiredList = [1,2,3]
+                        numMarginallyTrustedRequiredList = [1, 2, 3]
                         maxPathLengthList = [3]
 
-                        count = 0
-                        for makeAllValidKeysPartialTrust in makeAllValidKeysPartialTrustList:
-                            for numMarginallyTrustedRequired in numMarginallyTrustedRequiredList:
-                                for maxPathLength in maxPathLengthList:
-                                    count += 1
+                        ## Full key validation parameters
+                        # makeAllValidKeysPartialTrustList = [True, False]
+                        # numMarginallyTrustedRequiredList = [1,2,3,4]
+                        # maxPathLengthList = [2,3,4,5]
 
-                                    # Since we're retesting the same web of users again, reset
-                                    # them so that they dont have any valid/trust/distance to main
-                                    # information that would pollute the next validation configuration
-                                    for user in [mainUser] + mainSignedUsers + otherUsers:
-                                        user.resetToInitialWebState()
-
-                                    validateKeys(mainUser, mainSignedUsers,
-                                                otherUsers, numMarginallyTrustedRequired,
-                                                makeAllValidKeysPartialTrust, maxPathLength)
-
-                                    print("Web Configuration: ")
-                                    print("numMainSignedUsers:", numMainSignedUsers)
-                                    print("probImmediateFullTrust:", probImmediateFullTrust)
-                                    print("numOtherUsers:", numOtherUsers)
-                                    print("probBadActor:", probBadActor)
-                                    print("probOtherSigned:", probOtherSigned)
-
-                                    print("Validation Configuration: ")
-                                    print("makeAllValidKeysPartialTrust:", makeAllValidKeysPartialTrust)
-                                    print("numMarginallyTrustedRequired:", numMarginallyTrustedRequired)
-                                    print("maxPathLength:", maxPathLength)
-
-                                    report = generateReport(mainUser, mainSignedUsers, otherUsers)
-                                    printReport(report)
-
-                                    print("")
-
-                                    # Build graph of web of users
-                                    g = Digraph('G', filename='hello.gv' + str(count))
-                                    buildGraph(g, mainUser, mainSignedUsers, otherUsers)
-                                    g.view()
-                                    #import pdb
-                                    #pdb.set_trace()
+                        testWebOfUsers(
+                            mainUser,
+                            mainSignedUsers,
+                            otherUsers,
+                            makeAllValidKeysPartialTrustList,
+                            numMarginallyTrustedRequiredList,
+                            maxPathLengthList,
+                        )
 
 
-def createWebOfUsers(numMainSignedUsers, numOtherUsers,
-                     probImmediateFullTrust, probBadActor,
-                     probOtherSigned):
+def testWebOfUsers(
+    mainUser,
+    mainSignedUsers,
+    otherUsers,
+    makeAllValidKeysPartialTrustList,
+    numMarginallyTrustedRequiredList,
+    maxPathLengthList,
+):
+    loopCount = 0
+    # Iterate over all combinations of key validation parameters
+    for makeAllValidKeysPartialTrust in makeAllValidKeysPartialTrustList:
+        for numMarginallyTrustedRequired in numMarginallyTrustedRequiredList:
+            for maxPathLength in maxPathLengthList:
+                loopCount += 1
+
+                # Since we're retesting the same web of users again, reset
+                # them so that they dont have any valid/trust/distance to main
+                # information that would pollute the next validation configuration
+                for user in [mainUser] + mainSignedUsers + otherUsers:
+                    user.resetToInitialWebState()
+
+                validateKeys(
+                    mainUser,
+                    mainSignedUsers,
+                    otherUsers,
+                    numMarginallyTrustedRequired,
+                    makeAllValidKeysPartialTrust,
+                    maxPathLength,
+                )
+
+                print("\nValidation Configuration:")
+                print("-------------------------")
+                print("makeAllValidKeysPartialTrust:", makeAllValidKeysPartialTrust)
+                print("numMarginallyTrustedRequired:", numMarginallyTrustedRequired)
+                print("maxPathLength:", maxPathLength)
+
+                report = generateReport(mainUser, mainSignedUsers, otherUsers)
+                printReport(report)
+
+                print("")
+
+                # Build graph of web of users
+                g = Digraph("G", filename="hello.gv" + str(loopCount))
+                buildGraph(g, mainUser, mainSignedUsers, otherUsers)
+                g.view()
+
+
+def createWebOfUsers(
+    numMainSignedUsers,
+    numOtherUsers,
+    trustLevelProbability,
+    probImmediateFullTrust,
+    probBadActor,
+    probOtherSigned,
+):
     # Reset taken names, we're creating a new web
     global takenNames
     takenNames = [-1]
@@ -177,21 +221,26 @@ def createWebOfUsers(numMainSignedUsers, numOtherUsers,
     mainUser = User(TRUST_ULTIMATE)
 
     # Create partially completed web of users
-    mainSignedUsers, otherUsers = createUsers(mainUser, numMainSignedUsers,
-                                              numOtherUsers, probImmediateFullTrust)
+    mainSignedUsers, otherUsers = createUsers(
+        mainUser, numMainSignedUsers, numOtherUsers, probImmediateFullTrust
+    )
 
     # Some "other" users are bad actors
     assignBadActors(otherUsers, probBadActor)
 
     # Have other users get signed based on probability
-    signOtherUsersConsideringBadActors(mainSignedUsers, otherUsers, probOtherSigned)
+    signOtherUsersConsideringBadActors(
+        mainSignedUsers, otherUsers, trustLevelProbability, probOtherSigned
+    )
 
     return mainUser, mainSignedUsers, otherUsers
 
-def createUsers(mainUser, numMainSignedUsers, numOtherUsers,
-                     probImmediateFullTrust):
+
+def createUsers(mainUser, numMainSignedUsers, numOtherUsers, probImmediateFullTrust):
     # Generate a set of users signed by main user
-    mainSignedUsers = createMainSignedUsers(mainUser, numMainSignedUsers, probImmediateFullTrust)
+    mainSignedUsers = createMainSignedUsers(
+        mainUser, numMainSignedUsers, probImmediateFullTrust
+    )
 
     # Generate a set of users NOT signed by main user
     # They might be signed by other users
@@ -199,28 +248,33 @@ def createUsers(mainUser, numMainSignedUsers, numOtherUsers,
 
     return mainSignedUsers, otherUsers
 
+
 def createMainSignedUsers(mainUser, numMainSignedUsers, probImmediateFullTrust):
     mainSignedUsers = []
     for _ in range(numMainSignedUsers):
-        if random.random() < probImmediateFullTrust: # randomly choose whether full or partial trust
+        if (
+            random.random() < probImmediateFullTrust
+        ):  # randomly choose whether full or partial trust
             trustLevel = TRUST_FULL
         else:
             trustLevel = TRUST_PARTIAL
         user = User(trustLevel)
-        user.addSigner(mainUser)# immediate users signed by mainSignedUser
+        user.addSigner(mainUser)  # immediate users signed by mainSignedUser
         mainUser.addSignee(user)
         mainSignedUsers.append(user)
 
     return mainSignedUsers
 
+
 def createOtherUsers(numOtherUsers):
     otherUsers = []
     for _ in range(numOtherUsers):
-        user = User(TRUST_NONE) # initially do not trust other users at all
-                                # might change if their key is validated
+        user = User(TRUST_NONE)  # initially do not trust other users at all
+        # might change if their key is validated
         otherUsers.append(user)
 
     return otherUsers
+
 
 def assignBadActors(otherUsers, probBadActor):
     for user in otherUsers:
@@ -228,14 +282,18 @@ def assignBadActors(otherUsers, probBadActor):
         if x < probBadActor:
             user.badActor = True
 
-def signOtherUsersConsideringBadActors(mainSignedUsers, otherUsers, probOtherSigned):
+
+def signOtherUsersConsideringBadActors(
+    mainSignedUsers, otherUsers, trustLevelProbability, probOtherSigned
+):
     for user in otherUsers:
         for signer in mainSignedUsers + otherUsers:
             if user == signer:
                 continue
 
             # Random probability that signer even considers signing user's key
-            n = random.normalvariate(probOtherSigned, .1)
+            # Use normal distribution cenetered around probOtherSigned with sigma 0.1
+            n = random.normalvariate(probOtherSigned, 0.1)
             n /= len(mainSignedUsers + otherUsers)
 
             x = random.random()
@@ -256,16 +314,30 @@ def signOtherUsersConsideringBadActors(mainSignedUsers, otherUsers, probOtherSig
                         user.addSigner(signer)
                         signer.addSignee(user)
 
-def validateKeys(mainUser, mainSignedUsers, otherUsers, numMarginallyTrustedRequired,
-                 makeAllValidKeysPartialTrust, maxPathLength):
+
+def validateKeys(
+    mainUser,
+    mainSignedUsers,
+    otherUsers,
+    numMarginallyTrustedRequired,
+    makeAllValidKeysPartialTrust,
+    maxPathLength,
+):
     # Run key validation calculations
+    # If makeAllValidKeysPartialTrust is true, then we might need to re-reun the
+    # calculateValidKeys method multiple times to make sure all key validations are
+    # completed
     count = 0
     recheckValidKeys = True
     while recheckValidKeys:
         count += 1
-        recheckValidKeys = calculateValidKeys(mainUser, mainSignedUsers,
-                                              otherUsers, numMarginallyTrustedRequired,
-                                              makeAllValidKeysPartialTrust)
+        recheckValidKeys = calculateValidKeys(
+            mainUser,
+            mainSignedUsers,
+            otherUsers,
+            numMarginallyTrustedRequired,
+            makeAllValidKeysPartialTrust,
+        )
 
     # After keys have been validated, generate distance for each user to main user
     calculatePathLengthToMainUser(mainUser)
@@ -273,25 +345,24 @@ def validateKeys(mainUser, mainSignedUsers, otherUsers, numMarginallyTrustedRequ
     # Mark keys too far away as invalid based on maxPathLength
     invalidateKeysTooFarAway(otherUsers, maxPathLength)
 
-    ## Calculate bad actors
-    #calculateBadActors(mainUser, mainSignedUsers, otherUsers)
 
-    ## Print web of users
-    #printAllUsers(mainUser, mainSignedUsers, otherUsers)
-
-def calculateValidKeys(mainUser, mainSignedUsers, otherUsers, numMarginallyTrustedRequired,
-                       makeAllValidKeysPartialTrust):
-    mainUser.valid = True # automatically validate own key
+def calculateValidKeys(
+    mainUser,
+    mainSignedUsers,
+    otherUsers,
+    numMarginallyTrustedRequired,
+    makeAllValidKeysPartialTrust,
+):
+    mainUser.valid = True  # automatically validate own key
     for user in mainSignedUsers:
-        user.valid = True # valid if signed by yourself
+        user.valid = True  # valid if signed by yourself
 
-    #recheckValidKeys = True
-    #while recheckValidKeys:
     recheckValidKeys = False
     for user in otherUsers:
         if user.valid:
             # This user has already been validated
             continue
+
         fullyTrustedSigner = False
         numMarginallyTrustedSigners = 0
         for signingUser in user.signers:
@@ -301,84 +372,61 @@ def calculateValidKeys(mainUser, mainSignedUsers, otherUsers, numMarginallyTrust
                     if numMarginallyTrustedSigners == numMarginallyTrustedRequired:
                         break
                 else:
-                    print("invalid signer can't count")
+                    print(
+                        "invalid signer doesn't count as a marginally trusted verifier"
+                    )
             elif signingUser.trustLevel == TRUST_FULL:
                 fullyTrustedSigner = True
                 break
-        if fullyTrustedSigner or numMarginallyTrustedSigners == numMarginallyTrustedRequired:
+        if (
+            fullyTrustedSigner
+            or numMarginallyTrustedSigners == numMarginallyTrustedRequired
+        ):
             user.valid = True
             recheckValidKeys = True
             if makeAllValidKeysPartialTrust:
-                user.trustLevel = TRUST_PARTIAL # OPTION: make all valid keys partial trust
+                user.trustLevel = TRUST_PARTIAL
     return recheckValidKeys
-
-def calculateBadActors(mainUser, mainSignedUsers, otherUsers):
-    for user in [mainUser] + mainSignedUsers + otherUsers:
-        if mainUser in user.signers:
-            pass
-
-        else:
-            probability_bad = -1
-            for signingUser in user.signers:
-                if signingUser.trustLevel != None:
-                    if probability_bad == -1:
-                        probability_bad = trustLevelProbability[signingUser.trustLevel]
-                    else:
-                        probability_bad *= trustLevelProbability[signingUser.trustLevel]
-
-            if probability_bad != -1:
-                x = random.random()
-                if x < probability_bad:
-                    user.badActor = True
-                user.probabilityBad = probability_bad
 
 
 def buildGraph(g, mainUser, mainSignedUsers, otherUsers):
-    #print("Main User: ", mainUser.name)
-    g.attr('node', shape='doublecircle')
+    g.attr("node", shape="doublecircle")
     g.node(mainUser.identifier)
 
-    g.attr('node', shape='circle')
+    g.attr("node", shape="circle")
     for user in mainSignedUsers:
-        style = ''
-        fillcolor = 'white'
-        shape = 'circle'
+        style = ""
+        fillcolor = "white"
+        shape = "circle"
         if user.badActor:
-            style = 'filled'
-            fillcolor = 'red'
+            style = "filled"
+            fillcolor = "red"
         if not user.valid:
-            shape = 'box'
+            shape = "box"
         g.node(user.identifier, style=style, fillcolor=fillcolor, shape=shape)
-        #print(user.badActor)
+        # print(user.badActor)
         for signedUser in user.signers:
-            g.edge(signedUser.identifier, user.identifier, label='')
+            g.edge(signedUser.identifier, user.identifier, label="")
 
     for user in otherUsers:
-        #print(user.badActor)
-        style = ''
-        fillcolor = 'white'
-        shape = 'circle'
+        style = ""
+        fillcolor = "white"
+        shape = "circle"
         if user.badActor:
-            style = 'filled'
-            fillcolor = 'red'
+            style = "filled"
+            fillcolor = "red"
         if not user.valid:
-            shape = 'box'
+            shape = "box"
         g.node(user.identifier, style=style, fillcolor=fillcolor, shape=shape)
         for signedUser in user.signers:
-            g.edge(signedUser.identifier, user.identifier, label='')
+            g.edge(signedUser.identifier, user.identifier, label="")
 
-
-
-    #f.attr('node', shape='doublecircle')
-    #f.node('LR_0')
-
-    #f.attr('node', shape='circle')
-    #f.edge('LR_0', 'LR_2', label='SS(B)')
 
 def calculatePathLengthToMainUser(mainUser):
     mainUser.pathLengthToMainUser = 0
     user = mainUser
     calcPathLength(user)
+
 
 def calcPathLength(user):
     for signee in user.signees:
@@ -395,6 +443,7 @@ def invalidateKeysTooFarAway(otherUsers, maxPathLength):
         if user.valid:
             if user.pathLengthToMainUser > maxPathLength:
                 user.valid = False
+
 
 class Report(object):
     def __init__(self, mainUser, mainSignedUsers, otherUsers):
@@ -455,15 +504,22 @@ def generateReport(mainUser, mainSignedUsers, otherUsers):
     report = Report(mainUser, mainSignedUsers, otherUsers)
     return report
 
+
 def printReport(report):
-    print("Test Report")
+    print("\n----Test Report----")
     print("Number of Valid Bad Actors: ", report.numValidBadActors)
     if report.numBadActors != 0:
-        print("Percentage Bad Actors Invalid: ", (report.numInvalidBadActors/report.numBadActors)*100)
+        print(
+            "Percentage Bad Actors Invalid: ",
+            (report.numInvalidBadActors / report.numBadActors) * 100,
+        )
     else:
         print("Percentage Bad Actors Invalid: 100%")
     print("Number of Invalid Good Actors: ", report.numInvalidGoodActors)
-    print("Percentage Good Actors Validated: ", (report.numValidGoodActors/report.numGoodActors)*100)
+    print(
+        "Percentage Good Actors Validated: ",
+        (report.numValidGoodActors / report.numGoodActors) * 100,
+    )
 
 
 def printAllUsers(mainUser, mainSignedUsers, otherUsers):
@@ -490,7 +546,5 @@ def printAllUsers(mainUser, mainSignedUsers, otherUsers):
         print("")
 
 
-
 if __name__ == "__main__":
-    main()
-
+    run_test()
