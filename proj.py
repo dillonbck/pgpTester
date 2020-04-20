@@ -52,6 +52,7 @@ class User(object):
 
         self.badActor = False
         self.valid = False
+        self.tooFarAway = False
 
         self.pathLengthToMainUser = -1
 
@@ -65,6 +66,7 @@ class User(object):
 
     def resetValidation(self):
         self.valid = False
+        self.tooFarAway = False
 
     def resetPathLengthToMaster(self):
         self.pathLengthToMainUser = -1
@@ -93,19 +95,33 @@ class User(object):
 
 
 def run_test():
+    #trustLevelProbability = {
+        #TRUST_NONE: 0.1,  # only matters if signed keys partial trust
+        #TRUST_PARTIAL: 0.1,
+        #TRUST_FULL: 0.01,
+        #TRUST_ULTIMATE: 0,
+    #}
+
     trustLevelProbability = {
-        TRUST_NONE: 0.1,  # only matters if signed keys partial trust
-        TRUST_PARTIAL: 0.1,
-        TRUST_FULL: 0.01,
-        TRUST_ULTIMATE: 0,
+        TRUST_NONE: (.8, 0.1),  # only matters if signed keys partial trust
+        TRUST_PARTIAL: (.8, 0.1),
+        TRUST_FULL: (.9, 0.01),
+        TRUST_ULTIMATE: (1, 0),
     }
 
+    #trustLevelProbability = {
+        #TRUST_NONE: (.8, 0.1),  # only matters if signed keys partial trust
+        #TRUST_PARTIAL: (.8, 0.1),
+        #TRUST_FULL: (.90, 0.01),
+        #TRUST_ULTIMATE: (1, 0),
+    #}
+
     # Test web configuration parameters for debugging
-    numMainSignedUsersList = [50]
-    numOtherUsersList = [100]
-    probImmediateFullTrustList = [1]
-    probBadActorList = [0.2]
-    probOtherSignedList = [3]
+    numMainSignedUsersList = [10]
+    numOtherUsersList = [980]
+    probImmediateFullTrustList = [1] # Don't change
+    probBadActorList = [0.02, 0.2]
+    probOtherSignedList = [5,10]
 
     ## Full web configuration parameters
     # numMainSignedUsersList = [5, 10, 20, 100, 200] # number of users signed by main user
@@ -113,6 +129,10 @@ def run_test():
     # numOtherUsersList = [10, 20, 40, 200, 400] # number of otherUser users
     # probBadActorList = [.2, .5, .8] # probability that otherUser user is a bad actor
     # probOtherSignedList = [2, 3, 4] # probability that mainSignedUser+otherUsers user will sign an otherUser # density of the web: sparse, normal, dense
+
+    header = "numMainSignedUsers, probImmediateFullTrust, numOtherUsers, probBadActor, probOtherSigned, makeAllValidKeysPartialTrust, numMarginallyTrustedRequired, maxPathLength, numValidBadActors, percentInvalidBadActors, numInvalidGoodActors, percentValidGoodActors, numInvalidGoodActorsFromPathLength, percentageGoodActorsInvalidFromPathLength"
+    with open("report.csv", "w") as f:
+        f.write(header)
 
     # Iterate over all combinations of web configuration parameters
     for numMainSignedUsers in numMainSignedUsersList:
@@ -130,24 +150,31 @@ def run_test():
                             probOtherSigned,
                         )
 
-                        print("-------------------------------")
-                        print("-------Web Configuration-------")
-                        print("-------------------------------")
-                        print("numMainSignedUsers:", numMainSignedUsers)
-                        print("probImmediateFullTrust:", probImmediateFullTrust)
-                        print("numOtherUsers:", numOtherUsers)
-                        print("probBadActor:", probBadActor)
-                        print("probOtherSigned:", probOtherSigned)
+                        #print("-------------------------------")
+                        #print("-------Web Configuration-------")
+                        #print("-------------------------------")
+                        #print("numMainSignedUsers:", numMainSignedUsers)
+                        #print("probImmediateFullTrust:", probImmediateFullTrust)
+                        #print("numOtherUsers:", numOtherUsers)
+                        #print("probBadActor:", probBadActor)
+                        #print("probOtherSigned:", probOtherSigned)
+
+                        resPart = [numMainSignedUsers, probImmediateFullTrust,
+                                   numOtherUsers, probBadActor, probOtherSigned]
+                        resPart = ",".join(map(str, resPart))
+                        with open("report.csv", "a") as f:
+                            f.write("\n")
 
                         # Test key validation parmaeters for debugging
-                        makeAllValidKeysPartialTrustList = [False]
-                        numMarginallyTrustedRequiredList = [1, 2, 3]
-                        maxPathLengthList = [3]
+                        #makeAllValidKeysPartialTrustList = [True]
+                        #numMarginallyTrustedRequiredList = [3]
+                        #maxPathLengthList = [2]
 
-                        ## Full key validation parameters
-                        # makeAllValidKeysPartialTrustList = [True, False]
-                        # numMarginallyTrustedRequiredList = [1,2,3,4]
-                        # maxPathLengthList = [2,3,4,5]
+                        # Full key validation parameters
+                        makeAllValidKeysPartialTrustList = [True] # Keep True, false is same as 
+                                                                  # path length 2
+                        numMarginallyTrustedRequiredList = [1,2,3,4,5]
+                        maxPathLengthList = [2,3,4,5]
 
                         testWebOfUsers(
                             mainUser,
@@ -156,6 +183,7 @@ def run_test():
                             makeAllValidKeysPartialTrustList,
                             numMarginallyTrustedRequiredList,
                             maxPathLengthList,
+                            resPart,
                         )
 
 
@@ -166,6 +194,7 @@ def testWebOfUsers(
     makeAllValidKeysPartialTrustList,
     numMarginallyTrustedRequiredList,
     maxPathLengthList,
+    resPart,
 ):
     loopCount = 0
     # Iterate over all combinations of key validation parameters
@@ -189,21 +218,29 @@ def testWebOfUsers(
                     maxPathLength,
                 )
 
-                print("\nValidation Configuration:")
-                print("-------------------------")
-                print("makeAllValidKeysPartialTrust:", makeAllValidKeysPartialTrust)
-                print("numMarginallyTrustedRequired:", numMarginallyTrustedRequired)
-                print("maxPathLength:", maxPathLength)
+                #print("\nValidation Configuration:")
+                #print("-------------------------")
+                #print("makeAllValidKeysPartialTrust:", makeAllValidKeysPartialTrust)
+                #print("numMarginallyTrustedRequired:", numMarginallyTrustedRequired)
+                #print("maxPathLength:", maxPathLength)
+                resPart2 = [makeAllValidKeysPartialTrust, numMarginallyTrustedRequired,
+                            maxPathLength]
+                resPart2 = resPart + "," + ",".join(map(str,resPart2))
 
                 report = generateReport(mainUser, mainSignedUsers, otherUsers)
-                printReport(report)
+                #printReport(report)
+                #print("")
+                resPart2 += "," + getReportVals(report)
+                #print(resPart)
+                with open("report.csv", "a") as f:
+                    f.write("\n")
+                    f.write(resPart2)
 
-                print("")
 
-                # Build graph of web of users
-                g = Digraph("G", filename="hello.gv" + str(loopCount))
-                buildGraph(g, mainUser, mainSignedUsers, otherUsers)
-                g.view()
+                ## Build graph of web of users
+                #g = Digraph("G", filename="hello.gv" + str(loopCount))
+                #buildGraph(g, mainUser, mainSignedUsers, otherUsers)
+                #g.view()
 
 
 def createWebOfUsers(
@@ -305,11 +342,15 @@ def signOtherUsersConsideringBadActors(
                     signer.addSignee(user)
                 else:
                     # User is a bad actor, lets see if the signer incorrectly signs
+                    probs = trustLevelProbability[signer.trustLevel]
+                    yn = random.normalvariate(probs[0], probs[1])
                     y = random.random()
-                    if y < trustLevelProbability[signer.trustLevel]:
+                    #if y < trustLevelProbability[signer.trustLevel]:
+                    if y > yn:
                         if signer.trustLevel != TRUST_NONE:
                             print("Incorrectly signed bad actor: ", user.name)
-                            print(y, "<", trustLevelProbability[signer.trustLevel])
+                            #print(y, "<", trustLevelProbability[signer.trustLevel])
+                            print(y, ">", yn)
                         # Signer incorrectly identified signed the key of a bad actor
                         user.addSigner(signer)
                         signer.addSignee(user)
@@ -443,6 +484,7 @@ def invalidateKeysTooFarAway(otherUsers, maxPathLength):
         if user.valid:
             if user.pathLengthToMainUser > maxPathLength:
                 user.valid = False
+                user.tooFarAway = True
 
 
 class Report(object):
@@ -499,6 +541,15 @@ class Report(object):
                 count += 1
         return count
 
+    @property
+    def numInvalidGoodActorsFromPathLength(self):
+        count = 0
+        for user in self.mainSignedUsers + self.otherUsers:
+            if not user.badActor and not user.valid:
+                if user.tooFarAway:
+                    count += 1
+        return count
+
 
 def generateReport(mainUser, mainSignedUsers, otherUsers):
     report = Report(mainUser, mainSignedUsers, otherUsers)
@@ -515,11 +566,22 @@ def printReport(report):
         )
     else:
         print("Percentage Bad Actors Invalid: 100%")
-    print("Number of Invalid Good Actors: ", report.numInvalidGoodActors)
+    print("Number of Invalid Good Actors: ", report.numInvalidGoodActors, "(", report.numInvalidGoodActorsFromPathLength, "too far away)")
     print(
         "Percentage Good Actors Validated: ",
         (report.numValidGoodActors / report.numGoodActors) * 100,
     )
+
+def getReportVals(report):
+    outList = [report.numValidBadActors]
+    if report.numBadActors != 0:
+        outList.append((report.numInvalidBadActors / report.numBadActors) * 100)
+    else:
+        outList.append("x")
+    outList += [report.numInvalidGoodActors, (report.numValidGoodActors / report.numGoodActors) * 100,
+    report.numInvalidGoodActorsFromPathLength, (report.numInvalidGoodActorsFromPathLength / report.numGoodActors) * 100]
+    out = ",".join(map(str, outList))
+    return out
 
 
 def printAllUsers(mainUser, mainSignedUsers, otherUsers):
